@@ -1,0 +1,16 @@
+****Springboot Docker Basics****
+Create a simple hello world project using spring initializar
+build the maven project to generate a jar file 
+  mvn clean package
+add a docker file "Dockerfile"
+Build the Dockerfile to generate a image
+  docker build -f Dockerfile -t hello-docker .
+  
+ verify the images
+  docker images
+verify the container
+  docker container ls -a
+Run the docker image
+    docker run -p 8085:8085 hello-docker
+ hit the enpoint
+  http://localhost:8085/hello
