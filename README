@@ -14,3 +14,114 @@ Run the docker image
     docker run -p 8085:8085 hello-docker
  hit the enpoint
   http://localhost:8085/hello
+  
+  *********************************************
+  ***********Running App on Kubernetes*********
+  *********************************************
+  
+1. Kubernetes Installation on Mac:
+curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/darwin/amd64/kubectl"
+
+2. Make binary executable
+        chmod +x ./kubectl
+3. Add path to local
+        sudo mv ./kubectl /usr/local/bin/kubectl
+4. Check the version
+        Kubectl version --client
+
+*****Install Minicube****
+Before installing minikube, make sure virtual box installaed in Mac, Virtual box acts as hypervisor
+1)  
+  curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64 \
+  && chmod +x minikube
+2)
+    sudo mv minikube /usr/local/bin
+
+Run the Hello World Application
+
+  1)$minikube start
+    
+        In Mac    automatically sync up with virtualbox   
+  2) open virtual box
+        $virtualbox
+  3) check kubectl and virtual box talking to each other      
+      $ kubectl get nodes
+NAME       STATUS   ROLES    AGE   VERSION
+minikube   Ready    master   59s   v1.17.2
+
+  4)check the docker images/
+         if not yet build docker image
+           Build docker image in minikube VM as we are not using docker hub
+                   eval $(minikube docker-env)
+             Docker build
+                    $ docker build -t hello-docker:v1 .
+    $docker images
+
+deploy    on to minikube
+$ kubectl run hello-docker --image=hello-docker:v1 --port=8085 --image-pull-policy=Never
+
+kubectl run --generator=deployment/apps.v1 is DEPRECATED and will be removed in a future version. Use kubectl run --generator=run-pod/v1 or kubectl create instead.
+deployment.apps/hello-docker created
+
+   
+5)Check the replica state
+$ kubectl get rs
+NAME         DESIRED   CURRENT   READY   AGE
+hw-bf79556   1         1         0       74s
+
+6)$ kubectl get pods
+$ kubectl get pods
+NAME                            READY   STATUS    RESTARTS   AGE
+hello-docker-6d64b99766-qlddq   1/1     Running   0          36s
+
+7)Expose the service, now service only accessible internal in cluster through IP, to make it accessible public expose the service
+$ kubectl expose deployment hello-docker --type="LoadBalancer"
+service/hello-docker exposed
+
+8)Expose the service
+$ kubectl get service
+NAME           TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+hello-docker   LoadBalancer   10.98.237.126   <pending>     8085:31422/TCP   98s
+kubernetes     ClusterIP      10.96.0.1       <none>        443/TCP          3h42m
+Admins-MacBook-Pro:hello swamy$ 
+
+
+9)pull this service up on browser
+
+$ minikube service hello-docker
+|-----------|--------------|-------------|---------------------------|
+| NAMESPACE |     NAME     | TARGET PORT |            URL            |
+|-----------|--------------|-------------|---------------------------|
+| default   | hello-docker |             | http://192.168.64.2:31422 |
+|-----------|--------------|-------------|---------------------------|
+🎉  Opening service default/hello-docker in default browser...
+
+
+Or
+http://192.168.64.2:31422/hello
+
+10)Kuberentes dashboards
+$kubectl dashboard
+http://127.0.0.1:50063/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/#/overview?namespace=default
+
+Just to see default deployment configuration
+$ kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /Users/swamy/.minikube/ca.crt
+    server: https://192.168.64.2:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: /Users/swamy/.minikube/client.crt
+    client-key: /Users/swamy/.minikube/client.key
